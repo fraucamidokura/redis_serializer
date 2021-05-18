@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import frauca.redis.serializer.channel.Message;
 import frauca.redis.serializer.channel.Publisher;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.Topic;
 
+@Slf4j
 public class RedisPublisher implements Publisher {
 
     private final ReactiveRedisTemplate<String,String> redisTemplate;
@@ -25,6 +27,7 @@ public class RedisPublisher implements Publisher {
     @SneakyThrows
     @Override
     public void publish(Message message) {
-        redisTemplate.convertAndSend(topic.getTopic(), mapper.writeValueAsString(message)).block();
+        String message1 = mapper.writeValueAsString(message);
+        redisTemplate.convertAndSend(topic.getTopic(), message1).block();
     }
 }

@@ -1,19 +1,17 @@
-package frauca.redis.serializer.channel;
+package frauca.redis.serializer.example;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import frauca.redis.serializer.channel.Message;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
-import java.io.Serializable;
-
 @Jacksonized
 @Getter
 @SuperBuilder
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
-public class Message implements Serializable {
-    @JsonProperty("id")
-    Long id;
-
+public class Type1Message extends Message {
+    @JsonProperty("name")
+    String name;
 }
