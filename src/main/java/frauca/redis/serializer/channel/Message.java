@@ -1,13 +1,21 @@
 package frauca.redis.serializer.channel;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import lombok.*;
 
 import java.io.Serializable;
 
-@AllArgsConstructor
-@Getter
+@JsonDeserialize(builder = Message.MessageBuilder.class)
+@Value
+@Builder(toBuilder = true)
 public class Message implements Serializable {
+    @JsonProperty("id")
     Long id;
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class MessageBuilder {
+
+    }
 }
