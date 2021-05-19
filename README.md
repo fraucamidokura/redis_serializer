@@ -13,3 +13,11 @@ docker run --name roger-redis -v -d -p 6379:6379 redis
 ```
 
 and connect to it
+
+To config the stream
+
+```buildoutcfg
+redis-cli
+xadd messages * just sample
+xgroup create messages messages $
+```

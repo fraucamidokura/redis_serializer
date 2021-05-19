@@ -6,6 +6,8 @@ import frauca.redis.serializer.channel.Publisher;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -27,7 +29,13 @@ public class RedisPublisher implements Publisher {
     @SneakyThrows
     @Override
     public void publish(Message message) {
-        String message1 = mapper.writeValueAsString(message);
-        redisTemplate.convertAndSend(topic.getTopic(), message1).block();
+        String strMessage = mapper.writeValueAsString(message);
+        ObjectRecord<String, String> record = StreamRecords.newRecord()
+                .ofObject(strMessage)
+                .withStreamKey(topic.getTopic());
+        this.redisTemplate
+                .opsForStream()
+                .add(record)
+                .subscribe();
     }
 }
