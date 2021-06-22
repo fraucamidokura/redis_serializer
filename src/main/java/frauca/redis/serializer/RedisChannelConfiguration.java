@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import frauca.redis.serializer.channel.Consumer;
+import frauca.redis.serializer.channel.Message;
 import frauca.redis.serializer.channel.Publisher;
 import frauca.redis.serializer.ports.channel.RedisConsumer;
 import frauca.redis.serializer.ports.channel.RedisPublisher;
@@ -18,13 +19,18 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 
 import javax.annotation.PreDestroy;
+import javax.crypto.MacSpi;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -50,15 +56,17 @@ public class RedisChannelConfiguration {
 
     @Bean
     public Subscription subscription(RedisConnectionFactory redisConnectionFactory,
-                                     StreamListener<String, ObjectRecord<String, String>> stream,
+                                     StreamListener<String, ObjectRecord<String, Message>> stream,
                                      @Value("${topic}") String topic_name) throws UnknownHostException {
-        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ObjectRecord<String, String>> options = StreamMessageListenerContainer
+        Jackson2JsonRedisSerializer serializer = new Jackson2JsonRedisSerializer(Message.class);
+
+        StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, ObjectRecord<String, Message>> options = StreamMessageListenerContainer
                 .StreamMessageListenerContainerOptions
                 .builder()
                 .pollTimeout(Duration.ofSeconds(1))
-                .targetType(String.class)
+                .targetType(Message.class)
                 .build();
-        StreamMessageListenerContainer<String, ObjectRecord<String, String>> listenerContainer = StreamMessageListenerContainer
+        StreamMessageListenerContainer<String, ObjectRecord<String, Message>> listenerContainer = StreamMessageListenerContainer
                 .create(redisConnectionFactory, options);
 
         Subscription subscription = listenerContainer.receive(
@@ -90,17 +98,17 @@ public class RedisChannelConfiguration {
     }
 
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
-        return jackson2ObjectMapperBuilder -> {
-
-            TypeResolverBuilder<?> typeResolver = new ObjectMapper.DefaultTypeResolverBuilder(OBJECT_AND_NON_CONCRETE);
-            typeResolver = typeResolver.init(JsonTypeInfo.Id.CLASS, null);
-            typeResolver = typeResolver.inclusion(JsonTypeInfo.As.PROPERTY);
-
-            jackson2ObjectMapperBuilder.defaultTyping(typeResolver);
-        };
+    public ReactiveRedisTemplate<String, Message> reactiveRedisTemplate(
+            ReactiveRedisConnectionFactory factory) {
+        StringRedisSerializer keySerializer = new StringRedisSerializer();
+        Jackson2JsonRedisSerializer<Message> valueSerializer =
+                new Jackson2JsonRedisSerializer<>(Message.class);
+        RedisSerializationContext.RedisSerializationContextBuilder<String, Message> builder =
+                RedisSerializationContext.newSerializationContext(keySerializer);
+        RedisSerializationContext<String, Message> context =
+                builder.value(valueSerializer).build();
+        return new ReactiveRedisTemplate<>(factory, context);
     }
-
     @PreDestroy
     public void cleanRedis() {
         factory.getConnection()

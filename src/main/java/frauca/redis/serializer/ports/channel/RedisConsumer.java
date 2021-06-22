@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import frauca.redis.serializer.channel.Consumer;
 import frauca.redis.serializer.channel.Message;
+import lombok.SneakyThrows;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 
 import org.springframework.data.redis.listener.Topic;
@@ -12,7 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
-public class RedisConsumer implements Consumer, StreamListener<String, ObjectRecord<String, String>>  {
+public class RedisConsumer implements Consumer, StreamListener<String, ObjectRecord<String, Message>>  {
     private final ObjectMapper mapper;
     private final Topic topic;
     private final MessagePipe pipe;
@@ -26,37 +27,31 @@ public class RedisConsumer implements Consumer, StreamListener<String, ObjectRec
 
     @Override
     public Flux<Message> consume() {
-        return Flux.create(pipe)
-                .concatMap(strMessage->{
-                    try {
-                        var converted =  mapper.readValue(strMessage,Message.class);
-                        return Mono.just(converted);
-                    } catch (JsonProcessingException e) {
-                        return Mono.error(e);
-                    }
-                });
+        return Flux.create(pipe);
     }
 
+    @SneakyThrows
     @Override
-    public void onMessage(ObjectRecord<String, String> record) {
-        pipe.publish(record.getValue());
+    public void onMessage(ObjectRecord<String, Message> record) {
+        Message value = record.getValue();
+        pipe.publish(value);
     }
 
-    private static class MessagePipe implements java.util.function.Consumer<FluxSink<String>> {
+    private static class MessagePipe implements java.util.function.Consumer<FluxSink<Message>> {
 
-        private FluxSink<String> sink;
+        private FluxSink<Message> sink;
 
-        public void publish(String message){
+        public void publish(Message message){
             sink.next(message);
         }
 
         @Override
-        public void accept(FluxSink<String> sink) {
+        public void accept(FluxSink<Message> sink) {
             this.sink = sink;
         }
 
         @Override
-        public java.util.function.Consumer<FluxSink<String>> andThen(java.util.function.Consumer<? super FluxSink<String>> after) {
+        public java.util.function.Consumer<FluxSink<Message>> andThen(java.util.function.Consumer<? super FluxSink<Message>> after) {
             return java.util.function.Consumer.super.andThen(after);
         }
     }
