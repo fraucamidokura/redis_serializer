@@ -29,9 +29,8 @@ public class RedisPublisher implements Publisher {
     @SneakyThrows
     @Override
     public void publish(Message message) {
-        String strMessage = mapper.writeValueAsString(message);
-        ObjectRecord<String, String> record = StreamRecords.newRecord()
-                .ofObject(strMessage)
+        ObjectRecord<String, Message> record = StreamRecords.newRecord()
+                .ofObject(message)
                 .withStreamKey(topic.getTopic());
         this.redisTemplate
                 .opsForStream()

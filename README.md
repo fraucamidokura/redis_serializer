@@ -14,7 +14,7 @@ docker run --name roger-redis -v -d -p 6379:6379 redis
 
 and connect to it
 
-To config the stream
+To config the stream.
 
 ```buildoutcfg
 redis-cli

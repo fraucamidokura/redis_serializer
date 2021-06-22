@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Jacksonized
 @Getter
 @SuperBuilder
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
+//@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class Message implements Serializable {
     @JsonProperty("id")
     Long id;
